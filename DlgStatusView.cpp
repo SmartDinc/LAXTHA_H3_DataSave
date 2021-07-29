@@ -242,26 +242,23 @@ afx_msg LRESULT CDlgStatusView::OnHeartBeat(WPARAM wParam, LPARAM lParam)
 		*/
 		
 
+		if (count >= 0) {
+			SYSTEMTIME cur_time;
+			GetLocalTime(&cur_time);
+
+			CString strTime;
+			strTime.Format("%02d:%02d:%02d.%03d\t", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
+
+			float var1 = m_HeartRate;
+			float var2 = var1 / 1000;
+			int var3 = (int)(60 / var2);
+
+			ofstream output(filename_1sBPM, ios::app);
+			output << strTime << m_HeartRate << "\t" << var3 << endl;
+			output.close();
+		}
 		
-		SYSTEMTIME cur_time;
-		GetLocalTime(&cur_time);
-
-		CString strTime;
-		strTime.Format("%02d:%02d:%02d.%03d\t", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
-
-		float var1 = m_HeartRate;
-		float var2 = var1 / 1000;
-		int var3 = (int)(60 / var2);
-
-		ofstream output(filename_1sBPM, ios::app);
-		output << strTime << m_HeartRate <<"\t"<< var3 << endl;
-		output.close();
-		
-
 		// 출처: https://killsia.tistory.com/entry/현재-시간-millisecond밀리세컨드까지-가져오기 [One Day One Line]
-
-
-	
 
 		//Beep(400,80); // 소리내기. 이 자리에서 소리내기 하면서 일정 시간동안 홀딩하게 되면 파형 디스플레이에서 끊김 현상 발생하므로 스레드로 처리.
 		_beginthreadex(NULL, 0, Thread_HeartSound, NULL, 0, &dw_Thread_HeartSound_ID);
