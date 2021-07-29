@@ -31,6 +31,8 @@ using namespace std;
 string filename_1sBPM = "";
 string filename_PPI_Array = "";
 int total_s = 0;
+char buffer1[80];
+	char buffer2[80];
 /////////////////////////////////////////////////////////////////////////////
 
 // CDlgStatusView dialog
@@ -250,8 +252,12 @@ afx_msg LRESULT CDlgStatusView::OnHeartBeat(WPARAM wParam, LPARAM lParam)
 		CString strTime;
 		strTime.Format("[%02d:%02d:%02d.%03d]\t", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
 
+		float var1 = m_HeartRate;
+		float var2 = var1 / 1000;
+		float var3 = 60 / var2;
+
 		ofstream output(filename_1sBPM, ios::app);
-		output << strTime << m_HeartRate << endl;
+		output << strTime << m_HeartRate <<"\t"<< var3 << endl;
 		output.close();
 		
 
@@ -396,7 +402,7 @@ afx_msg LRESULT CDlgStatusView::OnDeviceStatus(WPARAM wParam, LPARAM lParam)
 		
 		total_s++;
 		if(0 == buff.Compare("1")){
-			if (total_s < 180) {
+			if (total_s < 300) {
 				Diag_ManualStart();
 			}
 		}
@@ -668,6 +674,14 @@ void CDlgStatusView::DisplayResult()
 		m_ListHistoResult.AddString(str);// 표현.
 	}
 
+	/*
+	ofstream output(filename_PPI_Array, ios::app);	// 문예성
+	for (idx = 0; idx < m_ListHbiResult.GetCount(); idx++)
+	{
+		output << m_ListHbiResult.GetItemData(idx) << endl;
+	}
+	output.close();
+	*/
 	/// 심박시간격 데이터.
 	m_ListHbiResult.ResetContent();
 	/*
@@ -679,6 +693,7 @@ void CDlgStatusView::DisplayResult()
 	}
 	*/
 
+	
 	ofstream output(filename_PPI_Array, ios::app);
 	for (idx = 0; idx < stDiagResult.NUM_HBI; idx++)
 	{
@@ -691,6 +706,7 @@ void CDlgStatusView::DisplayResult()
 		output << str << endl;
 	}
 	output.close();
+	
 }
 
 void CDlgStatusView::OnBTNDiagStart()
@@ -712,8 +728,6 @@ void CDlgStatusView::OnBTNDiagStart()
 	curr_time = time(NULL);
 	curr_tm = localtime(&curr_time);
 	
-	char buffer1[80];
-	char buffer2[80];
 	std::strftime(buffer1, 80, "./data/BPM/%Y%m%d_%H%M%S_sersor.txt", curr_tm);
 	std::strftime(buffer2, 80, "./data/PPI/%Y%m%d_%H%M%S_sersor_PPI.txt", curr_tm);
 	filename_1sBPM = buffer1;
