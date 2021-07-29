@@ -21,6 +21,9 @@ public:
 	void Display_Status1(CString str);
 	void DisplayResult();
 	void DisplayResult2();
+	void startSetCount();
+	static UINT countThread(LPVOID pParam); // 스테틱으로 선언
+	int count = -1;
 
 	// 검사결과 받아둘 구조체 
 	st_DiagResult stDiagResult;

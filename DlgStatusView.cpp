@@ -4,10 +4,7 @@
 #include "stdafx.h"
 #include "TEST_LXSMWD12.h"
 #include "DlgStatusView.h"
-
 #include "process.h"	// for _beginthreadex
-
-
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -15,24 +12,22 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-/////////////////////////////////////////////////////////////////////////////
 #include <time.h> 
 #include<windows.h> // strtok(), atoi()를 위해서 인클루드 함 
 #include<stdio.h> 
-
 #include <ctime>
 #include<iostream>
 #include<fstream>
 #include<string>
+#include <thread>
 using namespace std;
 // 출처: https://blockdmask.tistory.com/322 [개발자 지망생]
 
 // 20201204
 string filename_1sBPM = "";
-string filename_PPI_Array = "";
+//string filename_PPI_Array = "";
 int total_s = 0;
 char buffer1[80];
-	char buffer2[80];
 /////////////////////////////////////////////////////////////////////////////
 
 // CDlgStatusView dialog
@@ -154,6 +149,8 @@ BOOL CDlgStatusView::OnInitDialog()
 	
 	Display_Status1("At first, click ths button Set_ConfigMsg."); 
 
+	startSetCount();
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -250,11 +247,11 @@ afx_msg LRESULT CDlgStatusView::OnHeartBeat(WPARAM wParam, LPARAM lParam)
 		GetLocalTime(&cur_time);
 
 		CString strTime;
-		strTime.Format("[%02d:%02d:%02d.%03d]\t", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
+		strTime.Format("%02d:%02d:%02d.%03d\t", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
 
 		float var1 = m_HeartRate;
 		float var2 = var1 / 1000;
-		float var3 = 60 / var2;
+		int var3 = (int)(60 / var2);
 
 		ofstream output(filename_1sBPM, ios::app);
 		output << strTime << m_HeartRate <<"\t"<< var3 << endl;
@@ -395,6 +392,7 @@ afx_msg LRESULT CDlgStatusView::OnDeviceStatus(WPARAM wParam, LPARAM lParam)
 
 	case 5: // 검사 잔여시간. 초단위 60 부터 에서 다운카운팅됨.
 	{
+		/*
 		m_DiagRTime = (unsigned char)lParam;
 
 		CString buff;
@@ -409,6 +407,8 @@ afx_msg LRESULT CDlgStatusView::OnDeviceStatus(WPARAM wParam, LPARAM lParam)
 		
 		buff.Format(_T("%d"), total_s);
 		Display_Status1(buff);
+
+		*/
 
 
 		break;
@@ -674,38 +674,8 @@ void CDlgStatusView::DisplayResult()
 		m_ListHistoResult.AddString(str);// 표현.
 	}
 
-	/*
-	ofstream output(filename_PPI_Array, ios::app);	// 문예성
-	for (idx = 0; idx < m_ListHbiResult.GetCount(); idx++)
-	{
-		output << m_ListHbiResult.GetItemData(idx) << endl;
-	}
-	output.close();
-	*/
 	/// 심박시간격 데이터.
 	m_ListHbiResult.ResetContent();
-	/*
-	for(idx = 0;idx < stDiagResult.NUM_HBI;idx++)
-	{
-		str.Format("%d : %d", idx, stDiagResult.HBI[idx]);
-		//m_ListHbiResult.AddString(str);		// 문예성
-		m_ListHbiResult.AddString("문예성");		// 문예성
-	}
-	*/
-
-	
-	ofstream output(filename_PPI_Array, ios::app);
-	for (idx = 0; idx < stDiagResult.NUM_HBI; idx++)
-	{
-		//str.Format("%d %f %f %f", idx, stDiagResult.HBI[idx], (float)(stDiagResult.HBI[idx]/1000), (float)(60 / (stDiagResult.HBI[idx] / 1000)));
-		float var1 = stDiagResult.HBI[idx];
-		float var2 = var1 /1000;
-		float var3 = 60/ var2;
-		str.Format("%d %f %f %f", idx, var1, var2, var3);
-		m_ListHbiResult.AddString(str);		// 문예성
-		output << str << endl;
-	}
-	output.close();
 	
 }
 
@@ -718,22 +688,22 @@ void CDlgStatusView::OnBTNDiagStart()
 	if (retv == -1)  str = _T("Diag_ManualStart fail : must execute after Open_Device.");
 	if (retv == -2)  str = _T("Diag_ManualStart fail : finger out.");
 
-	if (retv == 1)  str = _T("Diag_ManualStart OK   : Manual Started");
+	if (retv == 1) {
+		str = _T("Diag_ManualStart OK   : Manual Started");
+		// 20201208 : 파일 생성
+		time_t curr_time;
+		struct tm* curr_tm;
+		curr_time = time(NULL);
+		curr_tm = localtime(&curr_time);
 
+		std::strftime(buffer1, 80, "./data/%Y%m%d_%H%M%S_data.txt", curr_tm);
+		filename_1sBPM = buffer1;
+
+		total_s = 0;
+
+		CDlgStatusView::count = 0;
+	}
 	Display_Status1(str);
-
-	// 20201208 : 파일 생성
-	time_t curr_time;
-	struct tm* curr_tm;
-	curr_time = time(NULL);
-	curr_tm = localtime(&curr_time);
-	
-	std::strftime(buffer1, 80, "./data/BPM/%Y%m%d_%H%M%S_sersor.txt", curr_tm);
-	std::strftime(buffer2, 80, "./data/PPI/%Y%m%d_%H%M%S_sersor_PPI.txt", curr_tm);
-	filename_1sBPM = buffer1;
-	filename_PPI_Array = buffer2;
-
-	total_s = 0;
 
 	// https://dosnipe.tistory.com/39 [참고용 개발노트]
 	// https://www.ibm.com/support/knowledgecenter/ko/ssw_ibm_i_73/rtref/strfti.htm
@@ -750,7 +720,11 @@ void CDlgStatusView::OnBtnDiagstop()
 	if(retv == -1)  str = _T("Diag_ManualStop fail : must execute after Open_Device.");
 	if(retv == -2)  str = _T("Diag_ManualStop fail : finger out.");
 
-	if(retv ==  1)  str = _T("Diag_ManualStop OK   : Stopped.");
+	if (retv == 1) {
+		str = _T("Diag_ManualStop OK   : Stopped.");
+		CDlgStatusView::count = -1;
+	}
+		
 
 	Display_Status1(str);
 
@@ -803,4 +777,44 @@ void CDlgStatusView::OnBnClickedBtnOpendeviceusbserial()
 
 	Display_Status1(str);
 
+}
+
+
+
+void CDlgStatusView::startSetCount()
+{
+
+	CWinThread* p = NULL;
+	p = AfxBeginThread(countThread, this);//aExelSaveThread 함수명을 넣어주고
+
+	if (p == NULL)  //쓰레드생성실패시에러메시지
+		MessageBox("thread 1 Error");
+
+	// CloseHandle(p); // 클로즈 핸들
+}
+
+UINT CDlgStatusView::countThread(LPVOID pParam)
+{
+	while (TRUE) {
+		if (((CDlgStatusView*)pParam)->count >= 0) {
+			SYSTEMTIME cur_time;
+			GetLocalTime(&cur_time);
+
+			CString strTime;
+			strTime.Format("[%02d:%02d:%02d.%03d] %d(s)", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds, ((CDlgStatusView*)pParam)->count);
+
+
+			((CDlgStatusView*)pParam)->m_ListStatus1.SetSel(((CDlgStatusView*)pParam)->m_ListStatus1.GetCount());
+			((CDlgStatusView*)pParam)->m_ListStatus1.AddString(strTime);
+			((CDlgStatusView*)pParam)->m_ListStatus1.SetTopIndex(((CDlgStatusView*)pParam)->m_ListStatus1.GetCount() - 1);
+			((CDlgStatusView*)pParam)->count++;
+			if (((CDlgStatusView*)pParam)->count > 300) {
+				((CDlgStatusView*)pParam)->OnBtnDiagstop();
+			}
+		}
+		Sleep(1000);
+	}
+	
+
+	return 0;
 }
